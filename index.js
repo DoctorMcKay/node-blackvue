@@ -68,7 +68,7 @@ BlackVue.prototype.getFileMetadata = async function(path) {
 
 			res.on('data', nop);
 
-			return resolve(getMetadataFromHeaders(res.headers));
+			return resolve(getMetadataFromHeaders(res.headers, path));
 		});
 
 		req.end();
@@ -89,7 +89,7 @@ BlackVue.prototype.downloadFileStream = async function(path) {
 			}
 
 			return resolve({
-				"metadata": getMetadataFromHeaders(res.headers),
+				"metadata": getMetadataFromHeaders(res.headers, path),
 				"stream": res
 			});
 		});
@@ -140,15 +140,15 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 
 // private
 
-function getMetadataFromHeaders(headers) {
+function getMetadataFromHeaders(headers, path) {
 	let meta = {"size": null, "length": null};
 	if (headers['content-length']) {
-		meta.size = parseInt(res.headers['content-length'], 10);
+		meta.size = parseInt(headers['content-length'], 10);
 	}
 
 	if (headers['last-modified']) {
 		// it seems that instead of using timezones properly, the camera just sets GMT to the local time
-		let lastModified = new Date(res.headers['last-modified']);
+		let lastModified = new Date(headers['last-modified']);
 		let startTime = new Date(path.replace(/.*\/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_.*/, '$1-$2-$3 $4:$5:$6 GMT'));
 		meta.length = Math.round((lastModified - startTime) / 1000);
 	}
