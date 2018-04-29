@@ -5,7 +5,7 @@ const URL = require('url');
 module.exports = BlackVue;
 
 /**
- * @param {{ip, port}} [opts]
+ * @param {{[ip], [port]}} [opts] - Options
  * @constructor
  */
 function BlackVue(opts) {
@@ -15,11 +15,14 @@ function BlackVue(opts) {
 
 /**
  * Get a list of files that can be downloaded from the camera.
+ * @param {{[timeout]}} [opts] - Options
  * @returns {Promise<{mp4, gps, 3gf}>}
  */
-BlackVue.prototype.getDownloadableFiles = async function() {
+BlackVue.prototype.getDownloadableFiles = async function(opts) {
 	return new Promise((resolve, reject) => {
-		let req = HTTP.get(`http://${this._addr}/blackvue_vod.cgi`, (res) => {
+		let httpReq = URL.parse(`http://${this._addr}/blackvue_vod.cgi`);
+		httpReq.timeout = opts.timeout || 10000;
+		let req = HTTP.get(httpReq, (res) => {
 			if (res.statusCode != 200) {
 				return reject(new Error("HTTP error " + res.statusCode));
 			}
