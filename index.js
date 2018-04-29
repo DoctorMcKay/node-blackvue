@@ -1,4 +1,6 @@
+const FS = require('fs');
 const HTTP = require('http');
+const URL = require('url');
 
 module.exports = BlackVue;
 
@@ -13,7 +15,7 @@ function BlackVue(opts) {
 
 /**
  * Get a list of files that can be downloaded from the camera.
- * @returns {Promise<object>}
+ * @returns {Promise<{mp4, gps, 3gf}>}
  */
 BlackVue.prototype.getDownloadableFiles = async function() {
 	return new Promise((resolve, reject) => {
@@ -49,3 +51,109 @@ BlackVue.prototype.getDownloadableFiles = async function() {
 		req.on('error', reject);
 	});
 };
+
+/**
+ * Get metadata for a downloadable file
+ * @param {string} path
+ * @return {Promise<{size, length}>}
+ */
+BlackVue.prototype.getFileMetadata = async function(path) {
+	return new Promise((resolve, reject) => {
+		let httpReq = URL.parse(`http://${this._addr}${path}`);
+		httpReq.method = "HEAD";
+		let req = HTTP.request(httpReq, (res) => {
+			if (res.statusCode != 200) {
+				return reject(new Error("HTTP error " + res.statusCode));
+			}
+
+			res.on('data', nop);
+
+			return resolve(getMetadataFromHeaders(res.headers));
+		});
+
+		req.end();
+		req.on('error', reject);
+	});
+};
+
+/**
+ * Get a download stream for a file on the camera.
+ * @param {string} path
+ * @returns {Promise<{metadata, stream}>}
+ */
+BlackVue.prototype.downloadFileStream = async function(path) {
+	return new Promise((resolve, reject) => {
+		let req = HTTP.get(`http://${this._addr}${path}`, (res) => {
+			if (res.statusCode != 200) {
+				return reject(new Error("HTTP error " + res.statusCode));
+			}
+
+			return resolve({
+				"metadata": getMetadataFromHeaders(res.headers),
+				"stream": res
+			});
+		});
+
+		req.on('error', reject);
+	});
+};
+
+BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, progressListener) {
+	let req = await this.downloadFileStream(remotePath);
+
+	return new Promise((resolve, reject) => {
+		let file = FS.createWriteStream(localPath);
+		req.stream.pipe(file);
+
+		let bytesDownloaded = 0;
+		let previousPct = 0;
+		let startTime = Math.floor(Date.now() / 1000);
+
+		req.stream.on('data', (chunk) => {
+			bytesDownloaded += chunk.length;
+			emitProgress();
+		});
+
+		req.stream.on('end', resolve);
+
+		function emitProgress() {
+			if (!progressListener) {
+				return;
+			}
+
+			let pct = Math.round((bytesDownloaded / req.metadata.size) * 100);
+			if (pct > previousPct) {
+				previousPct = pct;
+				let elapsed = Math.floor(Date.now() / 1000) - startTime;
+				let timePerPct = elapsed / pct;
+				let eta = Math.round(timePerPct * (100 - pct));
+
+				progressListener({
+					"metadata": req.metadata,
+					"bytesDownloaded": bytesDownloaded,
+					"eta": eta
+				});
+			}
+		}
+	});
+};
+
+// private
+
+function getMetadataFromHeaders(headers) {
+	let meta = {"size": null, "length": null};
+	if (headers['content-length']) {
+		meta.size = parseInt(res.headers['content-length'], 10);
+	}
+
+	if (headers['last-modified']) {
+		// it seems that instead of using timezones properly, the camera just sets GMT to the local time
+		let lastModified = new Date(res.headers['last-modified']);
+		let startTime = new Date(path.replace(/.*\/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_.*/, '$1-$2-$3 $4:$5:$6 GMT'));
+		meta.length = Math.round((lastModified - startTime) / 1000);
+	}
+
+	return meta;
+}
+
+function nop() { }
