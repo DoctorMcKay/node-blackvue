@@ -42,6 +42,9 @@ Returns a Promise which is resolved by an object with these properties:
 - `metadata` - The metadata for the file, in the same format as `getFileMetadata`
 - `stream` - The stream of the file
 
+The stream may hang if the camera reboots or disconnects in the middle of the transfer. You're responsible for handling
+this event on your own if you use this method.
+
 ### downloadFileToDisk(remotePath, localPath[, progressListener])
 - `remotePath` - The string path to the file (from `getDownloadableFiles`)
 - `localPath` - The string path where the file should be written (the directory must exist)

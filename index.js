@@ -119,8 +119,20 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 			emitProgress();
 		});
 
-		req.stream.on('error', reject);
 		req.stream.on('end', resolve);
+		req.stream.on('error', (err) => {
+			FS.unlink(localPath, () => {
+				reject(err);
+			});
+		});
+
+		req.stream.setTimeout(20000);
+		req.stream.on('timeout', () => {
+			req.stream.end();
+			FS.unlink(localPath, () => {
+				reject(new Error("Timed out while receiving data"));
+			});
+		});
 
 		function emitProgress() {
 			if (!progressListener) {
