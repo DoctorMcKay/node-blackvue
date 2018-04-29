@@ -22,28 +22,27 @@ BlackVue.prototype.getDownloadableFiles = async function(opts) {
 	opts = opts || {};
 
 	return new Promise((resolve, reject) => {
-		let httpReq = URL.parse(`http://${this._addr}/blackvue_vod.cgi`);
-		httpReq.timeout = opts.timeout || 10000;
-		let req = HTTP.get(httpReq, (res) => {
+		let timeoutMs = opts.timeout || 10000;
+		let timeout = setTimeout(() => reject(new Error("Request timed out")), timeoutMs);
+
+		let req = HTTP.get(`http://${this._addr}/blackvue_vod.cgi`, (res) => {
+			clearTimeout(timeout);
+
 			if (res.statusCode != 200) {
 				return reject(new Error("HTTP error " + res.statusCode));
 			}
 
 			let body = "";
-			let failed = false;
-
-			res.setTimeout(20000);
-			res.on('timeout', () => {
-				failed = true;
-				res.end();
-				reject(new Error("Timed out while receiving data"));
-			});
 
 			res.on('data', (chunk) => {
 				body += chunk.toString('utf8');
+				clearTimeout(timeout);
+				timeout = setTimeout(() => reject(new Error("Timed out while receiving data")), timeoutMs);
 			});
 
 			res.on('end', () => {
+				clearTimeout(timeout);
+
 				// parse the response
 				let output = {"mp4": [], "gps": [], "3gf": []};
 				output.mp4 = body.split("\r\n").filter(line => !!line.match(/^n:/)).map(line => line.split(':')[1].split(',')[0]);
@@ -69,13 +68,21 @@ BlackVue.prototype.getDownloadableFiles = async function(opts) {
 /**
  * Get metadata for a downloadable file
  * @param {string} path
+ * @param {{[timeout]}} [opts] - Options
  * @return {Promise<{size, length}>}
  */
-BlackVue.prototype.getFileMetadata = async function(path) {
+BlackVue.prototype.getFileMetadata = async function(path, opts) {
+	opts = opts || {};
+
 	return new Promise((resolve, reject) => {
+		let timeoutMs = opts.timeout || 10000;
+		let timeout = setTimeout(() => reject(new Error("Request timed out")), timeoutMs);
+
 		let httpReq = URL.parse(`http://${this._addr}${path}`);
 		httpReq.method = "HEAD";
 		let req = HTTP.request(httpReq, (res) => {
+			clearTimeout(timeout);
+
 			if (res.statusCode != 200) {
 				return reject(new Error("HTTP error " + res.statusCode));
 			}
@@ -122,24 +129,23 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 		let bytesDownloaded = 0;
 		let previousPct = 0;
 		let startTime = Math.floor(Date.now() / 1000);
+		let timeout = setTimeout(() => reject(new Error("Timed out while receiving data")), 20000);
 
 		req.stream.on('data', (chunk) => {
 			bytesDownloaded += chunk.length;
 			emitProgress();
+			clearTimeout(timeout);
+			timeout = setTimeout(() => reject(new Error("Timed out while receiving data")), 20000);
 		});
 
-		req.stream.on('end', resolve);
+		req.stream.on('end', () => {
+			resolve();
+			clearTimeout(timeout);
+		});
+
 		req.stream.on('error', (err) => {
 			FS.unlink(localPath, () => {
 				reject(err);
-			});
-		});
-
-		req.stream.setTimeout(20000);
-		req.stream.on('timeout', () => {
-			req.stream.end();
-			FS.unlink(localPath, () => {
-				reject(new Error("Timed out while receiving data"));
 			});
 		});
 
