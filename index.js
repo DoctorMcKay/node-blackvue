@@ -19,6 +19,8 @@ function BlackVue(opts) {
  * @returns {Promise<{mp4, gps, 3gf}>}
  */
 BlackVue.prototype.getDownloadableFiles = async function(opts) {
+	opts = opts || {};
+
 	return new Promise((resolve, reject) => {
 		let httpReq = URL.parse(`http://${this._addr}/blackvue_vod.cgi`);
 		httpReq.timeout = opts.timeout || 10000;
