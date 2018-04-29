@@ -114,6 +114,7 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 			emitProgress();
 		});
 
+		req.stream.on('error', reject);
 		req.stream.on('end', resolve);
 
 		function emitProgress() {
