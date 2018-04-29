@@ -30,6 +30,15 @@ BlackVue.prototype.getDownloadableFiles = async function(opts) {
 			}
 
 			let body = "";
+			let failed = false;
+
+			res.setTimeout(20000);
+			res.on('timeout', () => {
+				failed = true;
+				res.end();
+				reject(new Error("Timed out while receiving data"));
+			});
+
 			res.on('data', (chunk) => {
 				body += chunk.toString('utf8');
 			});
