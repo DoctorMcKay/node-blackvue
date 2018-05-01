@@ -127,6 +127,7 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 		req.stream.pipe(file);
 
 		let bytesDownloaded = 0;
+		let lastPct = 0;
 		let startTime = Date.now();
 		let timeout = setTimeout(() => reject(new Error("Timed out while receiving data")), 20000);
 		let lastProgressEmit = 0;
@@ -156,10 +157,12 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 				return;
 			}
 
-			if (Date.now() - lastProgressEmit < 250) {
+			let pct = Math.round((bytesDownloaded / req.metadata.size) * 100);
+			if (Date.now() - lastProgressEmit < 250 && pct == lastPct) {
 				return; // only emit progress at most once every 250ms
 			}
 
+			lastPct = pct;
 			lastProgressEmit = Date.now();
 			let elapsed = Date.now() - startTime;
 			let speed = Math.round(bytesDownloaded / (elapsed / 1000));
