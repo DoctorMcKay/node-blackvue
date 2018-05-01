@@ -11,6 +11,7 @@ module.exports = BlackVue;
 function BlackVue(opts) {
 	opts = opts || {};
 	this._addr = (opts.ip || "10.99.77.1") + ":" + (opts.port || 80);
+	this._agent = new HTTP.Agent({"keepAlive": true});
 }
 
 /**
@@ -25,7 +26,9 @@ BlackVue.prototype.getDownloadableFiles = async function(opts) {
 		let timeoutMs = opts.timeout || 10000;
 		let timeout = setTimeout(() => reject(new Error("Request timed out")), timeoutMs);
 
-		let req = HTTP.get(`http://${this._addr}/blackvue_vod.cgi`, (res) => {
+		let httpReq = URL.parse(`http://${this._addr}/blackvue_vod.cgi`);
+		httpReq.agent = this._agent;
+		let req = HTTP.get(httpReq, (res) => {
 			clearTimeout(timeout);
 
 			if (res.statusCode != 200) {
@@ -80,6 +83,7 @@ BlackVue.prototype.getFileMetadata = async function(path, opts) {
 
 		let httpReq = URL.parse(`http://${this._addr}${path}`);
 		httpReq.method = "HEAD";
+		httpReq.agent = this._agent;
 		let req = HTTP.request(httpReq, (res) => {
 			clearTimeout(timeout);
 
@@ -104,7 +108,9 @@ BlackVue.prototype.getFileMetadata = async function(path, opts) {
  */
 BlackVue.prototype.downloadFileStream = async function(path) {
 	return new Promise((resolve, reject) => {
-		let req = HTTP.get(`http://${this._addr}${path}`, (res) => {
+		let httpReq = URL.parse(`http://${this._addr}${path}`);
+		httpReq.agent = this._agent;
+		let req = HTTP.get(httpReq, (res) => {
 			if (res.statusCode != 200) {
 				return reject(new Error(res.statusCode == 204 ? "Empty file" : ("HTTP error " + res.statusCode)));
 			}
