@@ -106,7 +106,7 @@ BlackVue.prototype.downloadFileStream = async function(path) {
 	return new Promise((resolve, reject) => {
 		let req = HTTP.get(`http://${this._addr}${path}`, (res) => {
 			if (res.statusCode != 200) {
-				return reject(new Error("HTTP error " + res.statusCode));
+				return reject(new Error(res.statusCode == 204 ? "Empty file" : ("HTTP error " + res.statusCode)));
 			}
 
 			return resolve({

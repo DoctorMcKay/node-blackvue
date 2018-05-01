@@ -45,6 +45,8 @@ Returns a Promise which is resolved by an object with these properties:
 The stream may hang if the camera reboots or disconnects in the middle of the transfer. You're responsible for handling
 this event on your own if you use this method.
 
+If the file exists on the camera but is empty, the promise will be rejected with error message "Empty file".
+
 ### downloadFileToDisk(remotePath, localPath[, progressListener])
 - `remotePath` - The string path to the file (from `getDownloadableFiles`)
 - `localPath` - The string path where the file should be written (the directory must exist)
