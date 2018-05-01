@@ -164,6 +164,7 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 				progressListener({
 					"metadata": req.metadata,
 					"bytesDownloaded": bytesDownloaded,
+					"elapsed": elapsed,
 					"eta": eta
 				});
 			}

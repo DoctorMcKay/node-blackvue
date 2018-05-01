@@ -51,6 +51,7 @@ this event on your own if you use this method.
 - `progressListener` - An optional function which will be called periodically with progress updates. It takes a single object argument with these properties:
     - `metadata` - The metadata for the file, in the same format as `getFileMetadata`
     - `bytesDownloaded` - The number of bytes downloaded
+    - `elapsed` - The elapsed time of the download, in seconds
     - `eta` - The estimated time to completion, in seconds
 
 Returns a Promise which is resolved with no data when the download is complete.
