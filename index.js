@@ -158,13 +158,13 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 			if (pct > previousPct) {
 				previousPct = pct;
 				let elapsed = Date.now() - startTime;
-				let speed = Math.round((bytesDownloaded / elapsed) / 1000);
+				let speed = Math.round(bytesDownloaded / (elapsed / 1000));
 				let eta = Math.round((req.metadata.size - bytesDownloaded) / speed);
 
 				progressListener({
 					"metadata": req.metadata,
 					"bytesDownloaded": bytesDownloaded,
-					"elapsed": Math.round(elapsed / 1000),
+					"elapsed": Math.floor(elapsed / 1000),
 					"eta": eta,
 					"speed": speed
 				});
