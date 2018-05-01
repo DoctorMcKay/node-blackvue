@@ -1,6 +1,6 @@
 {
 	"name": "blackvue",
-	"version": "0.0.7",
+	"version": "0.0.8",
 	"description": "Allows interfacing with Blackvue dashcams over local Wi-Fi connection",
 	"keywords": [
 		"blackvue",
