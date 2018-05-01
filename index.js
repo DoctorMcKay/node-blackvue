@@ -127,9 +127,10 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 		req.stream.pipe(file);
 
 		let bytesDownloaded = 0;
-		let previousPct = 0;
 		let startTime = Date.now();
 		let timeout = setTimeout(() => reject(new Error("Timed out while receiving data")), 20000);
+		let lastProgressEmit = 0;
+		let progressTimeout = setTimeout(emitProgress, 1000);
 
 		req.stream.on('data', (chunk) => {
 			bytesDownloaded += chunk.length;
@@ -141,6 +142,7 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 		req.stream.on('end', () => {
 			resolve();
 			clearTimeout(timeout);
+			clearTimeout(progressTimeout);
 		});
 
 		req.stream.on('error', (err) => {
@@ -154,21 +156,25 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 				return;
 			}
 
-			let pct = Math.round((bytesDownloaded / req.metadata.size) * 100);
-			if (pct > previousPct) {
-				previousPct = pct;
-				let elapsed = Date.now() - startTime;
-				let speed = Math.round(bytesDownloaded / (elapsed / 1000));
-				let eta = Math.round((req.metadata.size - bytesDownloaded) / speed);
-
-				progressListener({
-					"metadata": req.metadata,
-					"bytesDownloaded": bytesDownloaded,
-					"elapsed": Math.floor(elapsed / 1000),
-					"eta": eta,
-					"speed": speed
-				});
+			if (Date.now() - lastProgressEmit < 250) {
+				return; // only emit progress at most once every 250ms
 			}
+
+			lastProgressEmit = Date.now();
+			let elapsed = Date.now() - startTime;
+			let speed = Math.round(bytesDownloaded / (elapsed / 1000));
+			let eta = Math.round((req.metadata.size - bytesDownloaded) / speed);
+
+			progressListener({
+				"metadata": req.metadata,
+				"bytesDownloaded": bytesDownloaded,
+				"elapsed": Math.floor(elapsed / 1000),
+				"eta": eta,
+				"speed": speed
+			});
+
+			clearTimeout(progressTimeout);
+			progressTimeout = setTimeout(emitProgress, 1000);
 		}
 	});
 };
