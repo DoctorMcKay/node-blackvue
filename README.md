@@ -55,5 +55,6 @@ If the file exists on the camera but is empty, the promise will be rejected with
     - `bytesDownloaded` - The number of bytes downloaded
     - `elapsed` - The elapsed time of the download, in seconds
     - `eta` - The estimated time to completion, in seconds
+    - `speed` - The average download rate for this entire download, in bytes per second
 
 Returns a Promise which is resolved with no data when the download is complete.
