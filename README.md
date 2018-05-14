@@ -58,3 +58,31 @@ If the file exists on the camera but is empty, the promise will be rejected with
     - `speed` - The average download rate for this entire download, in bytes per second
 
 Returns a Promise which is resolved with no data when the download is complete.
+
+### startStream([which])
+- `which` - Specify which camera you want to stream video from. Either pass `BlackVue.Camera.Front` or `BlackVue.Camera.Rear`.
+
+Returns a Promise which is resolved with a `VideoStream` instance. `VideoStream` is an EventEmitter that emits `frame`
+events for each JPEG frame it receives, and `end` when the stream ends. You can call `end()` on the stream object to
+stop the stream.
+
+Example:
+
+```js
+const BlackVue = require('blackvue');
+
+let bv = new BlackVue();
+bv.startStream(BlackVue.Camera.Rear).then((stream) => {
+    stream.on('frame', (jpeg) => {
+        console.log("Got frame of size " + jpeg.length + " bytes");
+    });
+
+    stream.on('end', () => {
+        console.log("Camera feed ended");
+    });
+
+    setTimeout(() => {
+        stream.end();
+    }, 10000);
+});
+```
