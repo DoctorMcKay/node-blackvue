@@ -92,5 +92,6 @@ Some caveats:
     - If you start a front-camera stream and, without ending it, start a rear camera stream, the initial front-camera
     stream will switch to the rear camera, and vice versa
     - If you start two streams then end one, the other will stop receiving frames but will not emit `end`
-    - It seems like streams may stop receiving frames without emitting `end` if you start downloading a recorded video
-    from the camera.
+- It seems like streams may stop receiving frames without emitting `end` if you start downloading a recorded video
+from the camera.
+- Video streams are 704x480 @ ~10 FPS and around 400 kB/s. Each frame is a JPEG image.
