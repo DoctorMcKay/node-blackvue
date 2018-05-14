@@ -86,3 +86,11 @@ bv.startStream(BlackVue.Camera.Rear).then((stream) => {
     }, 10000);
 });
 ```
+
+Some caveats:
+- You cannot reliably have two active streams at the same time
+    - If you start a front-camera stream and, without ending it, start a rear camera stream, the initial front-camera
+    stream will switch to the rear camera, and vice versa
+    - If you start two streams then end one, the other will stop receiving frames but will not emit `end`
+    - It seems like streams may stop receiving frames without emitting `end` if you start downloading a recorded video
+    from the camera.
