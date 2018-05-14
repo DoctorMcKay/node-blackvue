@@ -15,7 +15,7 @@ module.exports = VideoStream;
 function VideoStream(req, rawStream, boundary) {
 	this._req = req;
 	this._stream = rawStream;
-	this._boundary = Buffer.from(boundary, 'ascii');
+	this._boundary = Buffer.from(boundary + "\r\n", 'ascii');
 	this._setup();
 }
 
@@ -30,7 +30,7 @@ VideoStream.prototype._setup = function() {
 		buf = Buffer.concat([buf, chunk]);
 		while ((pos = buf.indexOf(this._boundary)) != -1) {
 			// we have a complete frame, and it ends at `pos`
-			this.emit('frame', buf.slice(0, pos));
+			this.emit('frame', this._stripHeaders(buf.slice(0, pos)));
 			buf = buf.slice(pos + this._boundary.length);
 		}
 	});
@@ -42,6 +42,16 @@ VideoStream.prototype._setup = function() {
 	this._stream.on('end', () => {
 		this.emit('end');
 	});
+};
+
+/**
+ * Strip the headers from a frame.
+ * @param {Buffer} frame
+ * @returns {Buffer}
+ * @private
+ */
+VideoStream.prototype._stripHeaders = function(frame) {
+	return frame.slice(frame.indexOf("\r\n\r\n") + 4);
 };
 
 /**
