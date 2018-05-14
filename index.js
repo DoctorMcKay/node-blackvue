@@ -2,7 +2,18 @@ const FS = require('fs');
 const HTTP = require('http');
 const URL = require('url');
 
+const VideoStream = require('./components/VideoStream.js');
+
 module.exports = BlackVue;
+
+/**
+ * @enum Camera
+ * @type {{Front: string, Rear: string}}
+ */
+BlackVue.Camera = {
+	"Front": "F",
+	"Rear": "R"
+};
 
 /**
  * @param {{[ip], [port]}} [opts] - Options
@@ -186,6 +197,32 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 			clearTimeout(progressTimeout);
 			progressTimeout = setTimeout(emitProgress, 1000);
 		}
+	});
+};
+
+/**
+ * Start streaming live video from the camera.
+ * @param {Camera} [which=Front] - Which camera to stream (use one of the BlackVue.Camera constants)
+ * @returns {Promise<VideoStream>}
+ */
+BlackVue.prototype.startStream = async function(which) {
+	return new Promise((resolve, reject) => {
+		let req = HTTP.get(`http://${this._addr}/blackvue_live.cgi?direction=${which}`, (res) => {
+			if (res.statusCode != 200) {
+				return reject(new Error("HTTP error " + res.statusCode));
+			}
+
+			let match;
+			if (!res.headers['content-type'] || !(match = res.headers['content-type'].match(/^multipart\/x-mixed-replace; boundary=(.+)$/))) {
+				return reject(new Error("Bad content-type in response"));
+			}
+
+			resolve(new VideoStream(req, res, match[1]));
+		});
+
+		req.on('error', (err) => {
+			reject(err);
+		});
 	});
 };
 
