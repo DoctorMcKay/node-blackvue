@@ -119,6 +119,13 @@ BlackVue.prototype.downloadFileStream = async function(path) {
 	});
 };
 
+/**
+ * Download a file from the camera to the local disk.
+ * @param {string} remotePath
+ * @param {string} localPath
+ * @param {function} [progressListener]
+ * @returns {Promise<void>}
+ */
 BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, progressListener) {
 	let req = await this.downloadFileStream(remotePath);
 
