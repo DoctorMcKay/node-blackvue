@@ -202,12 +202,17 @@ BlackVue.prototype.downloadFileToDisk = async function(remotePath, localPath, pr
 
 /**
  * Start streaming live video from the camera.
- * @param {Camera} [which=Front] - Which camera to stream (use one of the BlackVue.Camera constants)
+ * @param {{camera, fps}} [options] - Options for the stream. For `camera`, use one of the BlackVue.Camera constants.
+ * Setting `fps` will *drop* frames such that however many frames you specify here are emitted per second, but we can't
+ * stream more frames than the camera will send. This has no affect on network activity between the camera and the
+ * machine you're streaming to, but this might be useful if you're re-streaming over a capped data connection.
  * @returns {Promise<VideoStream>}
  */
-BlackVue.prototype.startStream = async function(which) {
+BlackVue.prototype.startStream = async function(options) {
+	options = options || {};
+
 	return new Promise((resolve, reject) => {
-		let req = HTTP.get(`http://${this._addr}/blackvue_live.cgi?direction=${which}`, (res) => {
+		let req = HTTP.get(`http://${this._addr}/blackvue_live.cgi?direction=${options.camera || BlackVue.Camera.Front}`, (res) => {
 			if (res.statusCode != 200) {
 				return reject(new Error("HTTP error " + res.statusCode));
 			}
@@ -217,7 +222,7 @@ BlackVue.prototype.startStream = async function(which) {
 				return reject(new Error("Bad content-type in response"));
 			}
 
-			resolve(new VideoStream(req, res, match[1]));
+			resolve(new VideoStream(req, res, match[1], options));
 		});
 
 		req.on('error', (err) => {

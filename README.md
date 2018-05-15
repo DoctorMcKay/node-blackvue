@@ -59,8 +59,14 @@ If the file exists on the camera but is empty, the promise will be rejected with
 
 Returns a Promise which is resolved with no data when the download is complete.
 
-### startStream([which])
-- `which` - Specify which camera you want to stream video from. Either pass `BlackVue.Camera.Front` or `BlackVue.Camera.Rear`.
+### startStream([options])
+- `options` - An optional object with the following options:
+    - `camera` - Optional. Which camera you want to view. Specify either `BlackVue.Camera.Front` or `BlackVue.Camera.Rear`
+    - `fps` - Optional. You can cap the number of frames emitted per second using this option. This has no effect on
+    network activity between the camera and your application, it merely causes the module to drop frames received such
+    that we only emit approximately this many frames per second. This might be useful if you are re-broadcasting the
+    video stream over a limited data connection. The camera only sends approximately 10 frames per second and setting
+    this higher than the camera's framerate has no effect.
 
 Returns a Promise which is resolved with a `VideoStream` instance. `VideoStream` is an EventEmitter that emits `frame`
 events for each JPEG frame it receives, and `end` when the stream ends. You can call `end()` on the stream object to
@@ -72,7 +78,7 @@ Example:
 const BlackVue = require('blackvue');
 
 let bv = new BlackVue();
-bv.startStream(BlackVue.Camera.Rear).then((stream) => {
+bv.startStream({"camera": BlackVue.Camera.Rear}).then((stream) => {
     stream.on('frame', (jpeg) => {
         console.log("Got frame of size " + jpeg.length + " bytes");
     });
@@ -94,4 +100,4 @@ Some caveats:
     - If you start two streams then end one, the other will stop receiving frames but will not emit `end`
 - It seems like streams may stop receiving frames without emitting `end` if you start downloading a recorded video
 from the camera.
-- Video streams are 704x480 @ ~10 FPS and around 400 kB/s. Each frame is a JPEG image.
+- Video streams are 704x480 @ ~10 FPS and around 400 kB/s. Each frame is a separately-compressed JPEG image.
